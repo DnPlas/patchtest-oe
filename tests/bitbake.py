@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Checks related to bitbake parsing and environment
 #
 # Copyright (C) 2016 Intel Corporation
@@ -28,14 +26,14 @@ def bitbake(args):
     # Check if environment is prepared
     cmd = 'cd %s;. %s/oe-init-build-env' % (pti.repodir,
                                             pti.repodir)
-    subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+    subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
 
     # Run bitbake
     bitbake_cmd = 'bitbake %s' % ' '.join(args)
     cmd = 'cd %s;. %s/oe-init-build-env;%s' % (pti.repodir,
                                                pti.repodir,
                                                bitbake_cmd)
-    return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+    return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
 
 def filter(log, prog):
     """ Filter those lines defined by the regex """

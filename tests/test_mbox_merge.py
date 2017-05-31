@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Check if mbox was merged by patchtest
 #
 # Copyright (C) 2016 Intel Corporation
@@ -24,6 +22,7 @@ from patchtestdata import PatchTestInput as pti
 def headlog():
     output = subprocess.check_output(
         "cd %s; git log --pretty='%%h#%%aN#%%cD:#%%s' -1" % pti.repodir,
+        universal_newlines=True,
         shell=True
         )
     return output.split('#')
