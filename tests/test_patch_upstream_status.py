@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Checks related to the patch's upstream-status lines
 #
 # Copyright (C) 2016 Intel Corporation

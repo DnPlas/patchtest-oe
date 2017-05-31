@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Checks related to the python code done with pylint
 #
 # Copyright (C) 2016 Intel Corporation

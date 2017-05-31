@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # signed-off-by pyparsing definition
 #
 # Copyright (C) 2016 Intel Corporation

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Checks related to the patch's LIC_FILES_CHKSUM  metadata variable
 #
 # Copyright (C) 2016 Intel Corporation

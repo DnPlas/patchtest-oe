@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Check if the series was intended for other project (not OE-Core)
 #
 # Copyright (C) 2017 Intel Corporation

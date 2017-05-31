@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # common pyparsing variables
 #
 # Copyright (C) 2016 Intel Corporation

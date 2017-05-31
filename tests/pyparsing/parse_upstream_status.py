@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # upstream-status pyparsing definition
 #
 # Copyright (C) 2016 Intel Corporation

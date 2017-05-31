@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Checks related to patch line lengths
 #
 # Copyright (C) 2016 Intel Corporation

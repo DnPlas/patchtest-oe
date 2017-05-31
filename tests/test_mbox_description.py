@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Checks related to the patch's commit_message
 #
 # Copyright (C) 2016 Intel Corporation

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Checks correct parsing of mboxes
 #
 # Copyright (C) 2016 Intel Corporation
