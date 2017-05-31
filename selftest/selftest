@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Test every patch from files folder and output error on failure
 #
@@ -34,16 +34,16 @@ def test(root, patch):
     testid          = ".%s.%s" % (klass,testname)
 
     cmd     = 'patchtest %s -s %s/tests' % (patchpath, topdir)
-    results = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+    results = subprocess.check_output(cmd, stderr=subprocess.STDOUT, universal_newlines=True, shell=True)
 
     for resultline in results.splitlines():
         if testid in resultline:
             result, _ = resultline.split()
             if result.lower() != expected_result.lower():
-                print 'patch=%s expected=%s actual=%s cmd=%s' % (patch, expected_result.lower(), result.lower(), cmd)
+                print ('patch=%s expected=%s actual=%s cmd=%s' % (patch, expected_result.lower(), result.lower(), cmd))
             break
     else:
-        print "No test for=%s" % patch
+        print ("No test for=%s" % patch)
 
 if __name__ == '__main__':
     for root, dirs, patches in os.walk(patchesdir):
