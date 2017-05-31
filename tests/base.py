@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Base class to be used by all test cases defined in the suite
 #
 # Copyright (C) 2016 Intel Corporation
@@ -70,7 +68,7 @@ class Base(unittest.TestCase):
             cls.patchset = unidiff.PatchSet.from_filename(pti.repo.patch, encoding=u'UTF-8')
         except unidiff.UnidiffParseError as upe:
             cls.patchset = []
-            cls.unidiff_parse_error = upe.message
+            cls.unidiff_parse_error = str(upe)
 
         # Easy to iterate list of commits
         cls.commits = []
