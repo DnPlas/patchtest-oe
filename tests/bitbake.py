@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import sys
 import os
 import re
 import base
@@ -101,3 +102,27 @@ class Bitbake(base.Base):
         cls.added_pnpvs    = [(match.group('pn'), None) for match in added_matches if match]
         cls.modified_pnpvs = [(match.group('pn'), None) for match in modified_matches if match]
         cls.removed_pnpvs  = [(match.group('pn'), None) for match in removed_matches if match]
+
+        # load tinfoil
+        scripts_path = os.path.join(pti.repodir, 'scripts', 'lib')
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+            import scriptpath
+            scriptpath.add_bitbake_lib_path()
+
+        import bb.tinfoil
+        cls.tinfoil = bb.tinfoil.Tinfoil()
+
+        cls.tinfoil_error = False
+        try:
+            cls.tinfoil.prepare(config_only=False)
+        except bb.tinfoil.TinfoilUIException as te:
+            cls.tinfoil.shutdown()
+            cls.tinfoil_error = True
+        except:
+            cls.tinfoil.shutdown()
+            cls.tinfoil_error = True
+
+    @classmethod
+    def tearDownClassLocal(cls):
+        cls.tinfoil.shutdown()
