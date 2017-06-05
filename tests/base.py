@@ -86,7 +86,15 @@ class Base(unittest.TestCase):
         cls.setUpClassLocal()
 
     @classmethod
+    def tearDownClass(cls):
+        cls.tearDownClassLocal()
+
+    @classmethod
     def setUpClassLocal(cls):
+        pass
+
+    @classmethod
+    def tearDownClassLocal(cls):
         pass
 
     def fail(self, issue, fix=None, commit=None, data=None):
