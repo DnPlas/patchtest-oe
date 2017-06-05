@@ -15,61 +15,70 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import bitbake
+import base
 import re
 import patchtestdata
-import subprocess
 
-class LicFilesChkSum(bitbake.Bitbake):
+class LicFilesChkSum(base.Base):
     metadata = 'LIC_FILES_CHKSUM'
     license  = 'LICENSE'
     closed   = 'CLOSED'
     licmark  = re.compile('%s|%s|CHECKSUM|CHKSUM' % (metadata, license), re.IGNORECASE)
 
     def test_lic_files_chksum_presence(self):
-        if not self.added_pnpvs:
+        if not self.added:
             self.skip('No added recipes, skipping test')
 
-        # get the proper metadata values
-        added_licsums = []
-        for pn,pv in self.added_pnpvs:
-            try:
-                added_licsums.append(bitbake.getVar(self.metadata, pn))
-            except subprocess.CalledProcessError:
-                self.skip('Target %s cannot be parse by bitbake' % pn)
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared')
 
-        for licsum in added_licsums:
-            lic = bitbake.getVar(self.license, pn)
-            if lic == self.closed:
-                continue
-            if not licsum:
-                self.fail('%s is missing in newly added recipe' % self.metadata,
-                          'Specify the variable %s in %s_%s' % (self.metadata, pn, pv))
+        try:
+            for pn, _ in self.added:
+                rd = self.tinfoil.parse_recipe(pn)
+                lic_files_chksum = rd.getVar(self.metadata)
+                if rd.getVar(self.license) == self.closed:
+                    continue
+                if not lic_files_chksum:
+                    self.fail('%s is missing in newly added recipe' % self.metadata,
+                              'Specify the variable %s in %s' % (self.metadata, pn))
+        finally:
+            self.tinfoil.shutdown()
 
     def pretest_lic_files_chksum_modified_not_mentioned(self):
-        if not (self.modified_pnpvs + self.added_pnpvs):
+        if not self.modified:
             self.skip('No added or modified recipes, skipping pretest')
 
-        # get the proper metadata values
-        for pn,_ in self.modified_pnpvs + self.added_pnpvs:
-            try:
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata, pn)] = bitbake.getVar(self.metadata, pn)
-            except subprocess.CalledProcessError:
-                self.skip('Target %s cannot be parse by bitbake' % pn)
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared')
+
+        try:
+            # get the proper metadata values
+            for pn,_ in self.modified:
+                rd = self.tinfoil.parse_recipe(pn)
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
+        finally:
+            self.tinfoil.shutdown()
 
     def test_lic_files_chksum_modified_not_mentioned(self):
-        if not (self.modified_pnpvs + self.added_pnpvs):
+        if not self.modified:
             self.skip('No modified or added recipes, skipping test')
 
-        # get the proper metadata values
-        for pn,_ in self.modified_pnpvs + self.added_pnpvs:
-            try:
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata, pn)] = bitbake.getVar(self.metadata, pn)
-            except subprocess.CalledProcessError as cpe:
-                self.skip('Target %s cannot be parse by bitbake' % pn)
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared')
+
+        try:
+            # get the proper metadata values
+            for pn,_ in self.modified + self.added:
+                rd = self.tinfoil.parse_recipe(pn)
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
+        finally:
+            self.tinfoil.shutdown()
 
         # compare if there were changes between pre-merge and merge
-        for pn,_ in self.modified_pnpvs + self.added_pnpvs:
+        for pn,_ in self.modified + self.added:
             pretest = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(),self.metadata, pn)]
             test    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata, pn)]
 

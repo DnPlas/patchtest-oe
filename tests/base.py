@@ -22,7 +22,8 @@ import unidiff
 from patchtestdata import PatchTestInput as pti
 import mailbox
 import collections
-import sys, os
+import sys
+import os
 import re
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'pyparsing'))
@@ -34,6 +35,70 @@ warn=logger.warn
 error=logger.error
 
 Commit = collections.namedtuple('Commit', ['author', 'subject', 'commit_message', 'shortlog', 'payload'])
+
+def get_metadata_stats(patchset):
+    """Get lists of added, modified and removed metadata files"""
+    # Matches PN and PV from a recipe filename
+    pnpv = re.compile("(?P<pn>[a-zA-Z0-9\-]+)_?")
+
+    added_paths = []
+    modified_paths = []
+    removed_paths  = []
+
+    for patch in patchset:
+        if patch.path.endswith('.bb') or patch.path.endswith('.bbappend') or patch.path.endswith('.inc'):
+            if patch.is_added_file:
+                added_paths.append(patch.path)
+            elif patch.is_modified_file:
+                modified_paths.append(patch.path)
+            elif patch.is_removed_file:
+                removed_paths.append(patch.path)
+
+    added_matches    = [pnpv.match(os.path.basename(path)) for path in added_paths]
+    modified_matches = [pnpv.match(os.path.basename(path)) for path in modified_paths]
+    removed_matches  = [pnpv.match(os.path.basename(path)) for path in removed_paths]
+
+    added = [(match.group('pn'), None) for match in added_matches if match]
+    modified = [(match.group('pn'), None) for match in modified_matches if match]
+    removed = [(match.group('pn'), None) for match in removed_matches if match]
+
+    return added, modified, removed
+
+def setup_tinfoil(config_only=False):
+    """Initialize tinfoil api from bitbake"""
+
+    tinfoil = None
+    # import relevant libraries
+    try:
+        scripts_path = os.path.join(pti.repodir, 'scripts', 'lib')
+        if scripts_path not in sys.path:
+            sys.path.insert(0, scripts_path)
+        import scriptpath
+        scriptpath.add_bitbake_lib_path()
+        import bb.tinfoil
+    except ImportError:
+        return tinfoil
+
+    # Load tinfoil
+    try:
+        builddir = os.environ.get('BUILDDIR')
+        if not builddir:
+            logger.warn('Bitbake environment not loaded?')
+            return tinfoil
+        orig_cwd = os.path.abspath(os.curdir)
+        os.chdir(builddir)
+        tinfoil = bb.tinfoil.Tinfoil()
+        tinfoil.prepare(config_only=config_only)
+    except bb.tinfoil.TinfoilUIException as te:
+        tinfoil.shutdown()
+        tinfoil = None
+    except:
+        tinfoil.shutdown()
+        raise
+    finally:
+        os.chdir(orig_cwd)
+
+    return tinfoil
 
 class Base(unittest.TestCase):
     # if unit test fails, fail message will throw at least the following JSON: {"id": <testid>}
@@ -82,6 +147,9 @@ class Base(unittest.TestCase):
                                    shortlog=shortlog(msg['subject']),
                                    commit_message=commit_message(payload),
                                    payload=payload))
+
+        # get info about added/modified/remove recipes
+        cls.added, cls.modified, cls.removed = get_metadata_stats(cls.patchset)
 
         cls.setUpClassLocal()
 

@@ -15,46 +15,51 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import bitbake
 import patchtestdata
 import subprocess
 import base
 import re
 
-class SrcUri(bitbake.Bitbake):
+class SrcUri(base.Base):
 
     metadata  = 'SRC_URI'
     md5sum    = 'md5sum'
     sha256sum = 'sha256sum'
     git_regex = re.compile('^git\:\/\/.*')
 
-    def setUp(self):
-        if self.unidiff_parse_error:
-            self.skip('Python-unidiff parse error')
-
     def pretest_src_uri_left_files(self):
-        if not self.modified_pnpvs:
+        if not self.modified:
             self.skip('No modified recipes, skipping pretest')
 
-        # get the proper metadata values
-        for pn,pv in self.modified_pnpvs:
-            try:
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = bitbake.getVar(self.metadata, pn)
-            except subprocess.CalledProcessError:
-                self.skip('Target %s cannot be parsed by bitbake' % pn)
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared')
+
+        try:
+            # get the proper metadata values
+            for pn,pv in self.modified:
+                rd = self.tinfoil.parse_recipe(pn)
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
+        finally:
+            self.tinfoil.shutdown()
 
     def test_src_uri_left_files(self):
-        if not self.modified_pnpvs:
+        if not self.modified:
             self.skip('No modified recipes, skipping pretest')
 
-        # get the proper metadata values
-        for pn,pv in self.modified_pnpvs:
-            try:
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = bitbake.getVar(self.metadata, pn)
-            except subprocess.CalledProcessError:
-                self.skip('Target %s cannot be parsed by bitbake' % pn)
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared')
 
-        for pn,_ in self.modified_pnpvs:
+        try:
+            # get the proper metadata values
+            for pn,pv in self.modified:
+                rd = self.tinfoil.parse_recipe(pn)
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
+        finally:
+            self.tinfoil.shutdown()
+
+        for pn,_ in self.modified:
             pretest_src_uri = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
             test_src_uri    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
 
@@ -79,31 +84,42 @@ class SrcUri(bitbake.Bitbake):
                               data=[('File', f) for f in filesremoved_from_usr_uri])
 
     def pretest_src_uri_checksums_not_changed(self):
-        # get the proper metadata values
-        for pn,_ in self.modified_pnpvs:
-            try:
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = bitbake.getVar(self.metadata, pn)
-                for uri in bitbake.getVar(self.metadata, pn).split():
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared')
+
+        try:
+            # get the proper metadata values
+            for pn,_ in self.modified:
+                rd = self.tinfoil.parse_recipe(pn)
+                src_uri = rd.getVar(self.metadata)
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = src_uri
+                for uri in src_uri.split():
                      if not 'file:' in uri:
                          if self.git_regex.match(uri):
                              self.skip('No need to test SRC_URI checksums on a git source')
                 for flag in [self.md5sum, self.sha256sum]:
-                    patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), flag, pn)]  = bitbake.getFlag(flag, pn)
-            except subprocess.CalledProcessError:
-                self.skip('Target %s cannot be parsed by bitbake' % pn)
-
+                    patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), flag, pn)]  = rd.getVarFlag(self.metadata, flag)
+        finally:
+            self.tinfoil.shutdown()
 
     def test_src_uri_checksums_not_changed(self):
-        # get the proper metadata values
-        for pn,_ in self.modified_pnpvs:
-            try:
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = bitbake.getVar(self.metadata, pn)
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared')
+
+        try:
+            # get the proper metadata values
+            for pn,_ in self.modified:
+                rd = self.tinfoil.parse_recipe(pn)
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = rd.getVar(self.metadata)
                 for flag in [self.md5sum, self.sha256sum]:
-                    patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), flag, pn)]  = bitbake.getFlag(flag, pn)
-            except subprocess.CalledProcessError:
-                self.skip('Target %s cannot be parsed by bitbake' % pn)
+                    patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), flag, pn)]  = rd.getVarFlag(self.metadata, flag)
+        finally:
+            self.tinfoil.shutdown()
+
         # loop on every src_uri and check if checksums change
-        for pn,_ in self.modified_pnpvs:
+        for pn,_ in self.modified:
             pretest_src_uri = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
             test_src_uri    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
 

@@ -15,25 +15,53 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import bitbake
-import re
-import patchtestdata
-import subprocess
+import base
+import os
 
-class License(bitbake.Bitbake):
+class License(base.Base):
     metadata = 'LICENSE'
+    invalid_license = 'PATCHTESTINVALID'
 
     def test_license_presence(self):
-        if not self.added_pnpvs:
+        if not self.added:
             self.skip('No added recipes, skipping test')
 
-        for pn,pv in self.added_pnpvs:
-            try:
-                bitbake.bitbake(['-e', pn])
-            except subprocess.CalledProcessError as e:
-                for lines in e.output.split('\n'):
-                    if 'This recipe does not have the LICENSE field set' in lines:
-                         self.fail('Recipe does not have the LICENSE field set',
-                                   'Include a LICENSE into the new recipe')
-                self.skip('Target %s cannot be parse by bitbake' % pn)
+        # TODO: this is a workaround so we can parse the recipe not
+        # containing the LICENSE var: add some default license instead
+        # of INVALID into auto.conf, then remove this line at the end
+        auto_conf = os.path.join(os.environ.get('BUILDDIR'), 'conf', 'auto.conf')
+        open_flag = 'w'
+        if os.path.exists(auto_conf):
+            open_flag = 'a'
+        with open(auto_conf, open_flag) as fd:
+            for pn,_ in self.added:
+                fd.write('LICENSE ??= "%s"\n' % self.invalid_license)
+
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared, possible wrong oe-core repository path')
+
+        try:
+            no_license = False
+            for pn,pv in self.added:
+                rd = self.tinfoil.parse_recipe(pn)
+                license = rd.getVar(self.metadata)
+                if license == self.invalid_license:
+                    no_license = True
+                    break
+
+            # remove auto.conf line or the file itself
+            if open_flag == 'w':
+                os.remove(auto_conf)
+            else:
+                fd = open(auto_conf, 'r')
+                lines = fd.readlines()
+                fd.close()
+                with open(auto_conf, 'w') as fd:
+                    fd.write(''.join(lines[:-1]))
+        finally:
+            self.tinfoil.shutdown()
+
+        if no_license:
+            self.fail('Recipe does not have the LICENSE field set', 'Include a LICENSE into the new recipe')
 

@@ -15,23 +15,24 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import bitbake
-import subprocess
+import base
 
-class Summary(bitbake.Bitbake):
+class Summary(base.Base):
     metadata = 'SUMMARY'
 
     def test_summary_presence(self):
-        # get the summaries
-        added_summaries = []
-        for pn,pv in self.added_pnpvs:
-            try:
-                added_summaries.append(bitbake.getVar(self.metadata, pn))
-            except subprocess.CalledProcessError:
-                self.skip('Target %s cannot be parse by bitbake' % pn)
+        self.tinfoil = base.setup_tinfoil()
+        if not self.tinfoil:
+            self.skip('Tinfoil could not be prepared')
 
-        for summary in added_summaries:
-            # "${PN} version ${PN}-${PR}" is the default, so fail if default
-            if summary.startswith('%s version %s' % (pn, pv)):
-                self.fail('%s is missing in newly added recipe' % self.metadata,
-                          'Specify the variable %s in %s' % (self.metadata, pn))
+        try:
+            for pn,_ in self.added:
+                rd = self.tinfoil.parse_recipe(pn)
+                summary = rd.getVar(self.metadata)
+
+                # "${PN} version ${PN}-${PR}" is the default, so fail if default
+                if summary.startswith('%s version' % pn):
+                    self.fail('%s is missing in newly added recipe' % self.metadata,
+                              'Specify the variable %s in %s' % (self.metadata, pn))
+        finally:
+            self.tinfoil.shutdown()
