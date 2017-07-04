@@ -19,6 +19,7 @@ import patchtestdata
 import subprocess
 import base
 import re
+from patchtestdata import PatchTestInput as pti
 
 class SrcUri(base.Base):
 
@@ -26,6 +27,11 @@ class SrcUri(base.Base):
     md5sum    = 'md5sum'
     sha256sum = 'sha256sum'
     git_regex = re.compile('^git\:\/\/.*')
+
+    def setUp(self):
+        # these tests just make sense on patches that can be merged
+        if not pti.repo.canbemerged:
+            self.skip('Patch cannot be merged')
 
     def pretest_src_uri_left_files(self):
         if not self.modified:

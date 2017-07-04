@@ -18,12 +18,18 @@
 import base
 import re
 import patchtestdata
+from patchtestdata import PatchTestInput as pti
 
 class LicFilesChkSum(base.Base):
     metadata = 'LIC_FILES_CHKSUM'
     license  = 'LICENSE'
     closed   = 'CLOSED'
     licmark  = re.compile('%s|%s|CHECKSUM|CHKSUM' % (metadata, license), re.IGNORECASE)
+
+    def setUp(self):
+        # these tests just make sense on patches that can be merged
+        if not pti.repo.canbemerged:
+            self.skip('Patch cannot be merged')
 
     def test_lic_files_chksum_presence(self):
         if not self.added:
@@ -47,7 +53,7 @@ class LicFilesChkSum(base.Base):
 
     def pretest_lic_files_chksum_modified_not_mentioned(self):
         if not self.modified:
-            self.skip('No added or modified recipes, skipping pretest')
+            self.skip('No modified recipes, skipping pretest')
 
         self.tinfoil = base.setup_tinfoil()
         if not self.tinfoil:
@@ -63,7 +69,7 @@ class LicFilesChkSum(base.Base):
 
     def test_lic_files_chksum_modified_not_mentioned(self):
         if not self.modified:
-            self.skip('No modified or added recipes, skipping test')
+            self.skip('No modified recipes, skipping test')
 
         self.tinfoil = base.setup_tinfoil()
         if not self.tinfoil:
@@ -71,14 +77,14 @@ class LicFilesChkSum(base.Base):
 
         try:
             # get the proper metadata values
-            for pn,_ in self.modified + self.added:
+            for pn,_ in self.modified:
                 rd = self.tinfoil.parse_recipe(pn)
                 patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
         finally:
             self.tinfoil.shutdown()
 
         # compare if there were changes between pre-merge and merge
-        for pn,_ in self.modified + self.added:
+        for pn,_ in self.modified:
             pretest = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(),self.metadata, pn)]
             test    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata, pn)]
 

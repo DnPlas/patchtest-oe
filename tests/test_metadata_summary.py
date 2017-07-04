@@ -21,6 +21,9 @@ class Summary(base.Base):
     metadata = 'SUMMARY'
 
     def test_summary_presence(self):
+        if not self.added:
+            self.skip('No added recipes, skipping test')
+
         self.tinfoil = base.setup_tinfoil()
         if not self.tinfoil:
             self.skip('Tinfoil could not be prepared')
