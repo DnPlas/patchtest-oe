@@ -30,6 +30,9 @@ class Summary(base.Base):
 
         try:
             for pn,_ in self.added:
+                # we are not interested in images
+                if 'core-image' in pn:
+                    continue
                 rd = self.tinfoil.parse_recipe(pn)
                 summary = rd.getVar(self.metadata)
 

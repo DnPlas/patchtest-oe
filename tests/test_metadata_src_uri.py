@@ -44,6 +44,9 @@ class SrcUri(base.Base):
         try:
             # get the proper metadata values
             for pn,pv in self.modified:
+                # we are not interested in images
+                if 'core-image' in pn:
+                    continue
                 rd = self.tinfoil.parse_recipe(pn)
                 patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
         finally:
@@ -60,6 +63,9 @@ class SrcUri(base.Base):
         try:
             # get the proper metadata values
             for pn,pv in self.modified:
+                # we are not interested in images
+                if 'core-image' in pn:
+                    continue
                 rd = self.tinfoil.parse_recipe(pn)
                 patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
         finally:

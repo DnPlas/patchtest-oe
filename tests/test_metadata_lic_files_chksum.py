@@ -41,6 +41,9 @@ class LicFilesChkSum(base.Base):
 
         try:
             for pn, _ in self.added:
+                # we are not interested in images
+                if 'core-image' in pn:
+                    continue
                 rd = self.tinfoil.parse_recipe(pn)
                 lic_files_chksum = rd.getVar(self.metadata)
                 if rd.getVar(self.license) == self.closed:
@@ -62,6 +65,9 @@ class LicFilesChkSum(base.Base):
         try:
             # get the proper metadata values
             for pn,_ in self.modified:
+                # we are not interested in images
+                if 'core-image' in pn:
+                    continue
                 rd = self.tinfoil.parse_recipe(pn)
                 patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
         finally:
@@ -78,6 +84,9 @@ class LicFilesChkSum(base.Base):
         try:
             # get the proper metadata values
             for pn,_ in self.modified:
+                # we are not interested in images
+                if 'core-image' in pn:
+                    continue
                 rd = self.tinfoil.parse_recipe(pn)
                 patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
         finally:
