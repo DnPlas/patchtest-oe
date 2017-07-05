@@ -19,6 +19,7 @@ import base
 import parse_upstream_status
 import pyparsing
 import re
+import os
 
 class PatchUpstreamStatus(base.Base):
 
@@ -66,4 +67,5 @@ class PatchUpstreamStatus(base.Base):
                         parse_upstream_status.upstream_status.parseString(line.lstrip('+'))
                     except pyparsing.ParseException as pe:
                         self.fail('Upstream-Status is in incorrect format',
-                                  'Fix Upstream-Status format in %s so it is one of: %s' % (newpatch.path, ', '.join(self.valid_status)))
+                                  'Fix Upstream-Status format in %s' % os.path.basename(newpatch.path),
+                                  data=[('Current', pe.pstr), ('Valid Status', ', '.join(self.valid_status))])
