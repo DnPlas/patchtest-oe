@@ -17,10 +17,16 @@
 
 import base
 import os
+from patchtestdata import PatchTestInput as pti
 
 class License(base.Base):
     metadata = 'LICENSE'
     invalid_license = 'PATCHTESTINVALID'
+
+    def setUp(self):
+        # these tests just make sense on patches that can be merged
+        if not pti.repo.canbemerged:
+            self.skip('Patch cannot be merged')
 
     def test_license_presence(self):
         if not self.added:

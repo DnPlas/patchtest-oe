@@ -16,9 +16,15 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import base
+from patchtestdata import PatchTestInput as pti
 
 class Summary(base.Base):
     metadata = 'SUMMARY'
+
+    def setUp(self):
+        # these tests just make sense on patches that can be merged
+        if not pti.repo.canbemerged:
+            self.skip('Patch cannot be merged')
 
     def test_summary_presence(self):
         if not self.added:
