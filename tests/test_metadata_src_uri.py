@@ -19,6 +19,7 @@ import patchtestdata
 import subprocess
 import base
 import re
+import os
 from patchtestdata import PatchTestInput as pti
 
 class SrcUri(base.Base):
@@ -75,8 +76,8 @@ class SrcUri(base.Base):
             pretest_src_uri = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
             test_src_uri    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
 
-            pretest_files = set([patch for patch in pretest_src_uri if patch.startswith('file://')])
-            test_files    = set([patch for patch in test_src_uri    if patch.startswith('file://')])
+            pretest_files = set([os.path.basename(patch) for patch in pretest_src_uri if patch.startswith('file://')])
+            test_files    = set([os.path.basename(patch) for patch in test_src_uri    if patch.startswith('file://')])
 
             # check if files were removed
             if len(test_files) < len(pretest_files):
@@ -85,7 +86,7 @@ class SrcUri(base.Base):
                 filesremoved_from_patchset = set()
                 for patch in self.patchset:
                     if patch.is_removed_file:
-                        filesremoved_from_patchset.add(patch.path)
+                        filesremoved_from_patchset.add(os.path.basename(patch.path))
 
                 # get the deleted files from the SRC_URI
                 filesremoved_from_usr_uri = pretest_files - test_files
@@ -105,7 +106,7 @@ class SrcUri(base.Base):
             for pn,_ in self.modified:
                 rd = self.tinfoil.parse_recipe(pn)
                 src_uri = rd.getVar(self.metadata)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = src_uri
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = src_uri.split(';')[0]
                 for uri in src_uri.split():
                      if not 'file:' in uri:
                          if self.git_regex.match(uri):
@@ -124,7 +125,8 @@ class SrcUri(base.Base):
             # get the proper metadata values
             for pn,_ in self.modified:
                 rd = self.tinfoil.parse_recipe(pn)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = rd.getVar(self.metadata)
+                src_uri = rd.getVar(self.metadata)
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = src_uri.split(';')[0]
                 for flag in [self.md5sum, self.sha256sum]:
                     patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), flag, pn)]  = rd.getVarFlag(self.metadata, flag)
         finally:
