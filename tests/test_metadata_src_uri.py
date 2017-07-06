@@ -104,15 +104,18 @@ class SrcUri(base.Base):
         try:
             # get the proper metadata values
             for pn,_ in self.modified:
+                patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)] = dict()
                 rd = self.tinfoil.parse_recipe(pn)
                 src_uri = rd.getVar(self.metadata)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = src_uri.split(';')[0]
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = src_uri
                 for uri in src_uri.split():
                      if not 'file:' in uri:
                          if self.git_regex.match(uri):
                              self.skip('No need to test SRC_URI checksums on a git source')
-                for flag in [self.md5sum, self.sha256sum]:
-                    patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), flag, pn)]  = rd.getVarFlag(self.metadata, flag)
+                for s in [self.md5sum, self.sha256sum]:
+                    for flag in rd.getVarFlags(self.metadata):
+                        if s in flag:
+                            patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)][flag] = rd.getVarFlag(self.metadata, flag)
         finally:
             self.tinfoil.shutdown()
 
@@ -124,11 +127,14 @@ class SrcUri(base.Base):
         try:
             # get the proper metadata values
             for pn,_ in self.modified:
+                patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)] = dict()
                 rd = self.tinfoil.parse_recipe(pn)
                 src_uri = rd.getVar(self.metadata)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)]  = src_uri.split(';')[0]
-                for flag in [self.md5sum, self.sha256sum]:
-                    patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), flag, pn)]  = rd.getVarFlag(self.metadata, flag)
+                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = src_uri
+                for s in [self.md5sum, self.sha256sum]:
+                    for flag in rd.getVarFlags(self.metadata):
+                        if s in flag:
+                            patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)][flag] = rd.getVarFlag(self.metadata, flag)
         finally:
             self.tinfoil.shutdown()
 
@@ -137,24 +143,18 @@ class SrcUri(base.Base):
             pretest_src_uri = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
             test_src_uri    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
 
-            pretest_uri = [uri for uri in pretest_src_uri if 'file:' not in uri]
-            test_uri    = [uri for uri in test_src_uri if 'file:' not in uri]
+            pretest_uri = set(uri for uri in pretest_src_uri if 'file:' not in uri)
+            test_uri    = set(uri for uri in test_src_uri if 'file:' not in uri)
 
-            for uri in test_uri:
-                if self.git_regex.match(uri):
-                     self.skip('No need to test SRC_URI checksums on a git source')
             if not pretest_uri:
                 base.logger.warn('No SRC_URI found on %s' % pn)
             if not test_uri:
                 base.logger.warn('No SRC_URI found on %s' % pn)
 
-            if pretest_uri != test_uri:
+            if pretest_uri.difference(test_uri):
                 # chksums must reflect the change
-                for sum in [self.md5sum, self.sha256sum]:
-                    pretest_sum = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), sum, pn)]
-                    test_sum    = patchtestdata.PatchTestDataStore['%s-%s-%s'    % (self.shortid(), sum, pn)]
-                    if pretest_sum != test_sum:
-                        break
-                else:
-                    self.fail('SRC_URI changed but checksums are the same',
-                              'Include the SRC_URI\'s checksums changes into your patch')
+                for flag in patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)].keys():
+                    pretest_sum = patchtestdata.PatchTestDataStore['pre%s-%s-sums' % (self.shortid(), pn)][flag]
+                    test_sum = patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)][flag]
+                    if pretest_sum == test_sum:
+                        self.fail('SRC_URI changed but checksums are the same', 'Include the SRC_URI\'s checksums changes into your patch')
