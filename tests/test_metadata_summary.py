@@ -18,7 +18,7 @@
 import base
 from patchtestdata import PatchTestInput as pti
 
-class Summary(base.Base):
+class Summary(base.Metadata):
     metadata = 'SUMMARY'
 
     def setUp(self):
@@ -35,7 +35,7 @@ class Summary(base.Base):
             self.skip('Tinfoil could not be prepared')
 
         try:
-            for pn,_ in self.added:
+            for pn in self.added:
                 # we are not interested in images
                 if 'core-image' in pn:
                     continue

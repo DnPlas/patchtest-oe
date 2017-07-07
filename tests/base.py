@@ -41,10 +41,10 @@ def get_metadata_stats(patchset):
     # Matches PN and PV from a recipe filename
     pnpv = re.compile("(?P<pn>[a-zA-Z0-9\-]+)_?")
 
-    added_paths = []
-    modified_paths = []
-    removed_paths  = []
+    added_paths, modified_paths, removed_paths = [], [], []
+    added, modified, removed = [], [], []
 
+    # get metadata filename additions, modification and removals
     for patch in patchset:
         if patch.path.endswith('.bb') or patch.path.endswith('.bbappend') or patch.path.endswith('.inc'):
             if patch.is_added_file:
@@ -54,13 +54,29 @@ def get_metadata_stats(patchset):
             elif patch.is_removed_file:
                 removed_paths.append(patch.path)
 
-    added_matches    = [pnpv.match(os.path.basename(path)) for path in added_paths]
-    modified_matches = [pnpv.match(os.path.basename(path)) for path in modified_paths]
-    removed_matches  = [pnpv.match(os.path.basename(path)) for path in removed_paths]
+    tinfoil = setup_tinfoil()
 
-    added = [(match.group('pn'), None) for match in added_matches if match]
-    modified = [(match.group('pn'), None) for match in modified_matches if match]
-    removed = [(match.group('pn'), None) for match in removed_matches if match]
+    # get package PN of the metadata filenames
+    try:
+        if tinfoil:
+            for path, pn in tinfoil.cooker.recipecaches[''].pkg_fn.items():
+                for p in added_paths:
+                    if p in path:
+                        if pn not in added:
+                            added.append(pn)
+                        break
+                for p in modified_paths:
+                    if p in path:
+                        if pn not in modified:
+                            modified.append(pn)
+                        break
+                for p in removed_paths:
+                    if p in path:
+                        if pn not in removed:
+                            removed.append(pn)
+                        break
+    finally:
+        tinfoil.shutdown()
 
     return added, modified, removed
 
@@ -148,9 +164,6 @@ class Base(unittest.TestCase):
                                    commit_message=commit_message(payload),
                                    payload=payload))
 
-        # get info about added/modified/remove recipes
-        cls.added, cls.modified, cls.removed = get_metadata_stats(cls.patchset)
-
         cls.setUpClassLocal()
 
     @classmethod
@@ -198,3 +211,9 @@ class Base(unittest.TestCase):
 
     def __str__(self):
         return json.dumps({'id': self.id()})
+
+class Metadata(Base):
+    @classmethod
+    def setUpClassLocal(cls):
+        # get info about added/modified/remove recipes
+        cls.added, cls.modified, cls.removed = get_metadata_stats(cls.patchset)

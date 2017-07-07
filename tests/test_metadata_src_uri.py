@@ -22,7 +22,7 @@ import re
 import os
 from patchtestdata import PatchTestInput as pti
 
-class SrcUri(base.Base):
+class SrcUri(base.Metadata):
 
     metadata  = 'SRC_URI'
     md5sum    = 'md5sum'
@@ -44,7 +44,7 @@ class SrcUri(base.Base):
 
         try:
             # get the proper metadata values
-            for pn,pv in self.modified:
+            for pn in self.modified:
                 # we are not interested in images
                 if 'core-image' in pn:
                     continue
@@ -63,7 +63,7 @@ class SrcUri(base.Base):
 
         try:
             # get the proper metadata values
-            for pn,pv in self.modified:
+            for pn in self.modified:
                 # we are not interested in images
                 if 'core-image' in pn:
                     continue
@@ -72,7 +72,7 @@ class SrcUri(base.Base):
         finally:
             self.tinfoil.shutdown()
 
-        for pn,_ in self.modified:
+        for pn in self.modified:
             pretest_src_uri = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
             test_src_uri    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
 
@@ -104,7 +104,7 @@ class SrcUri(base.Base):
 
         try:
             # get the proper metadata values
-            for pn,_ in self.modified:
+            for pn in self.modified:
                 patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)] = dict()
                 rd = self.tinfoil.parse_recipe(pn)
                 src_uri = rd.getVar(self.metadata)
@@ -127,7 +127,7 @@ class SrcUri(base.Base):
 
         try:
             # get the proper metadata values
-            for pn,_ in self.modified:
+            for pn in self.modified:
                 patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)] = dict()
                 rd = self.tinfoil.parse_recipe(pn)
                 src_uri = rd.getVar(self.metadata)
@@ -140,7 +140,7 @@ class SrcUri(base.Base):
             self.tinfoil.shutdown()
 
         # loop on every src_uri and check if checksums change
-        for pn,_ in self.modified:
+        for pn in self.modified:
             pretest_src_uri = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
             test_src_uri    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
 

@@ -19,7 +19,7 @@ import base
 import os
 from patchtestdata import PatchTestInput as pti
 
-class License(base.Base):
+class License(base.Metadata):
     metadata = 'LICENSE'
     invalid_license = 'PATCHTESTINVALID'
 
@@ -40,7 +40,7 @@ class License(base.Base):
         if os.path.exists(auto_conf):
             open_flag = 'a'
         with open(auto_conf, open_flag) as fd:
-            for pn,_ in self.added:
+            for pn in self.added:
                 fd.write('LICENSE ??= "%s"\n' % self.invalid_license)
 
         self.tinfoil = base.setup_tinfoil()
@@ -49,7 +49,7 @@ class License(base.Base):
 
         try:
             no_license = False
-            for pn,pv in self.added:
+            for pn in self.added:
                 rd = self.tinfoil.parse_recipe(pn)
                 license = rd.getVar(self.metadata)
                 if license == self.invalid_license:

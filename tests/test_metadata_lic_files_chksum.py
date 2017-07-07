@@ -20,7 +20,7 @@ import re
 import patchtestdata
 from patchtestdata import PatchTestInput as pti
 
-class LicFilesChkSum(base.Base):
+class LicFilesChkSum(base.Metadata):
     metadata = 'LIC_FILES_CHKSUM'
     license  = 'LICENSE'
     closed   = 'CLOSED'
@@ -40,7 +40,7 @@ class LicFilesChkSum(base.Base):
             self.skip('Tinfoil could not be prepared')
 
         try:
-            for pn, _ in self.added:
+            for pn in self.added:
                 # we are not interested in images
                 if 'core-image' in pn:
                     continue
@@ -64,7 +64,7 @@ class LicFilesChkSum(base.Base):
 
         try:
             # get the proper metadata values
-            for pn,_ in self.modified:
+            for pn in self.modified:
                 # we are not interested in images
                 if 'core-image' in pn:
                     continue
@@ -83,7 +83,7 @@ class LicFilesChkSum(base.Base):
 
         try:
             # get the proper metadata values
-            for pn,_ in self.modified:
+            for pn in self.modified:
                 # we are not interested in images
                 if 'core-image' in pn:
                     continue
@@ -93,7 +93,7 @@ class LicFilesChkSum(base.Base):
             self.tinfoil.shutdown()
 
         # compare if there were changes between pre-merge and merge
-        for pn,_ in self.modified:
+        for pn in self.modified:
             pretest = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(),self.metadata, pn)]
             test    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata, pn)]
 
