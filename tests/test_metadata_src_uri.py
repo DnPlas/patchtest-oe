@@ -91,7 +91,8 @@ class SrcUri(base.Base):
                 # get the deleted files from the SRC_URI
                 filesremoved_from_usr_uri = pretest_files - test_files
 
-                if len(filesremoved_from_usr_uri) != len(filesremoved_from_patchset):
+                # all removals from SRC_URI must be contained in the patchset
+                if not filesremoved_from_usr_uri.issubset(filesremoved_from_patchset):
                     self.fail('Files not removed from tree',
                               'Amend the patch containing the software patch file removal',
                               data=[('File', f) for f in filesremoved_from_usr_uri])
