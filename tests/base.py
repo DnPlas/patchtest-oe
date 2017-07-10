@@ -38,8 +38,13 @@ Commit = collections.namedtuple('Commit', ['author', 'subject', 'commit_message'
 
 def get_metadata_stats(patchset):
     """Get lists of added, modified and removed metadata files"""
-    # Matches PN and PV from a recipe filename
-    pnpv = re.compile("(?P<pn>[a-zA-Z0-9\-]+)_?")
+
+    def find_pn(data, path):
+        """Find the PN from data"""
+        for _path, _pn in data:
+            if path in _path:
+                return _pn
+        return None
 
     added_paths, modified_paths, removed_paths = [], [], []
     added, modified, removed = [], [], []
@@ -54,31 +59,18 @@ def get_metadata_stats(patchset):
             elif patch.is_removed_file:
                 removed_paths.append(patch.path)
 
-    tinfoil = setup_tinfoil()
-
     # get package PN of the metadata filenames
+    tinfoil = setup_tinfoil()
     try:
         if tinfoil:
-            for path, pn in tinfoil.cooker.recipecaches[''].pkg_fn.items():
-                for p in added_paths:
-                    if p in path:
-                        if pn not in added:
-                            added.append(pn)
-                        break
-                for p in modified_paths:
-                    if p in path:
-                        if pn not in modified:
-                            modified.append(pn)
-                        break
-                for p in removed_paths:
-                    if p in path:
-                        if pn not in removed:
-                            removed.append(pn)
-                        break
+            data = tinfoil.cooker.recipecaches[''].pkg_fn.items()
+            added = [find_pn(data,path) for path in added_paths]
+            modified = [find_pn(data,path) for path in modified_paths]
+            removed = [find_pn(data,path) for path in removed_paths]
     finally:
         tinfoil.shutdown()
 
-    return added, modified, removed
+    return [a for a in added if a], [m for m in modified if m], [r for r in removed if r]
 
 def setup_tinfoil(config_only=False):
     """Initialize tinfoil api from bitbake"""
