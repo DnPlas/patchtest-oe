@@ -91,11 +91,13 @@ class SrcUri(base.Metadata):
                 # get the deleted files from the SRC_URI
                 filesremoved_from_usr_uri = pretest_files - test_files
 
-                # all removals from SRC_URI must be contained in the patchset
-                if not filesremoved_from_usr_uri.issubset(filesremoved_from_patchset):
-                    self.fail('Files not removed from tree',
+                # finally, get those patches removed at SRC_URI and not removed from the patchset
+                # TODO: we are not taking into account  renames, so test may raise false positives
+                not_removed = filesremoved_from_usr_uri - filesremoved_from_patchset
+                if not_removed:
+                    self.fail('Patches not removed from tree',
                               'Amend the patch containing the software patch file removal',
-                              data=[('File', f) for f in filesremoved_from_usr_uri])
+                              data=[('Patch', f) for f in not_removed])
 
     def pretest_src_uri_checksums_not_changed(self):
         self.tinfoil = base.setup_tinfoil()
