@@ -123,7 +123,7 @@ class SrcUri(base.Metadata):
     def test_src_uri_checksums_not_changed(self):
         self.tinfoil = base.setup_tinfoil()
         if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared')
+            self.skip('tinfoil could not be prepared')
 
         try:
             # get the proper metadata values
@@ -144,8 +144,8 @@ class SrcUri(base.Metadata):
             pretest_src_uri = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
             test_src_uri    = patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
 
-            pretest_uri = set(uri for uri in pretest_src_uri if 'file:' not in uri)
-            test_uri    = set(uri for uri in test_src_uri if 'file:' not in uri)
+            pretest_uri = set(uri.split(';')[0] for uri in pretest_src_uri if 'file:' not in uri)
+            test_uri    = set(uri.split(';')[0] for uri in test_src_uri if 'file:' not in uri)
 
             if not pretest_uri:
                 base.logger.warn('No SRC_URI found on %s' % pn)
