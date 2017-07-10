@@ -104,4 +104,5 @@ class LicFilesChkSum(base.Metadata):
                        break
                 else:
                     self.fail('LIC_FILES_CHKSUM changed on target %s but there was no explanation as to why in the commit message' % pn,
-                              'Provide a reason for LIC_FILES_CHKSUM change in commit message')
+                              'Provide a reason for LIC_FILES_CHKSUM change in commit message',
+                              data=[('Current checksum', pretest), ('New checksum', test)])
