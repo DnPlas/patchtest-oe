@@ -87,13 +87,14 @@ def setup_tinfoil(config_only=False):
     except ImportError:
         return tinfoil
 
+    orig_cwd = os.path.abspath(os.curdir)
+
     # Load tinfoil
     try:
         builddir = os.environ.get('BUILDDIR')
         if not builddir:
             logger.warn('Bitbake environment not loaded?')
             return tinfoil
-        orig_cwd = os.path.abspath(os.curdir)
         os.chdir(builddir)
         tinfoil = bb.tinfoil.Tinfoil()
         tinfoil.prepare(config_only=config_only)
