@@ -36,78 +36,11 @@ error=logger.error
 
 Commit = collections.namedtuple('Commit', ['author', 'subject', 'commit_message', 'shortlog', 'payload'])
 
-def get_metadata_stats(patchset):
-    """Get lists of added, modified and removed metadata files"""
-
-    def find_pn(data, path):
-        """Find the PN from data"""
-        for _path, _pn in data:
-            if path in _path:
-                return _pn
-        return None
-
-    added_paths, modified_paths, removed_paths = [], [], []
-    added, modified, removed = [], [], []
-
-    # get metadata filename additions, modification and removals
-    for patch in patchset:
-        if patch.path.endswith('.bb') or patch.path.endswith('.bbappend') or patch.path.endswith('.inc'):
-            if patch.is_added_file:
-                added_paths.append(patch.path)
-            elif patch.is_modified_file:
-                modified_paths.append(patch.path)
-            elif patch.is_removed_file:
-                removed_paths.append(patch.path)
-
-    # get package PN of the metadata filenames
-    tinfoil = setup_tinfoil()
-    try:
-        if tinfoil:
-            data = tinfoil.cooker.recipecaches[''].pkg_fn.items()
-            added = [find_pn(data,path) for path in added_paths]
-            modified = [find_pn(data,path) for path in modified_paths]
-            removed = [find_pn(data,path) for path in removed_paths]
-    finally:
-        tinfoil.shutdown()
-
-    return [a for a in added if a], [m for m in modified if m], [r for r in removed if r]
-
-def setup_tinfoil(config_only=False):
-    """Initialize tinfoil api from bitbake"""
-
-    tinfoil = None
-    # import relevant libraries
-    try:
-        scripts_path = os.path.join(pti.repodir, 'scripts', 'lib')
-        if scripts_path not in sys.path:
-            sys.path.insert(0, scripts_path)
-        import scriptpath
-        scriptpath.add_bitbake_lib_path()
-        import bb.tinfoil
-    except ImportError:
-        return tinfoil
-
-    orig_cwd = os.path.abspath(os.curdir)
-
-    # Load tinfoil
-    try:
-        builddir = os.environ.get('BUILDDIR')
-        if not builddir:
-            logger.warn('Bitbake environment not loaded?')
-            return tinfoil
-        os.chdir(builddir)
-        tinfoil = bb.tinfoil.Tinfoil()
-        tinfoil.prepare(config_only=config_only)
-    except bb.tinfoil.TinfoilUIException as te:
-        tinfoil.shutdown()
-        tinfoil = None
-    except:
-        tinfoil.shutdown()
-        raise
-    finally:
-        os.chdir(orig_cwd)
-
-    return tinfoil
+class PatchtestOEError(Exception):
+    """Exception for handling patchtest-oe errors"""
+    def __init__(self, message, exitcode=1):
+        super(DevtoolError, self).__init__(message)
+        self.exitcode = exitcode
 
 class Base(unittest.TestCase):
     # if unit test fails, fail message will throw at least the following JSON: {"id": <testid>}
@@ -208,5 +141,83 @@ class Base(unittest.TestCase):
 class Metadata(Base):
     @classmethod
     def setUpClassLocal(cls):
+        cls.tinfoil = cls.setup_tinfoil()
+
         # get info about added/modified/remove recipes
-        cls.added, cls.modified, cls.removed = get_metadata_stats(cls.patchset)
+        cls.added, cls.modified, cls.removed = cls.get_metadata_stats(cls.patchset)
+
+    @classmethod
+    def tearDownClassLocal(cls):
+        cls.tinfoil.shutdown()
+
+    @classmethod
+    def setup_tinfoil(cls, config_only=True):
+        """Initialize tinfoil api from bitbake"""
+
+        # import relevant libraries
+        try:
+            scripts_path = os.path.join(pti.repodir, 'scripts', 'lib')
+            if scripts_path not in sys.path:
+                sys.path.insert(0, scripts_path)
+            import scriptpath
+            scriptpath.add_bitbake_lib_path()
+            import bb.tinfoil
+        except ImportError:
+            raise PatchtestOEError('Could not import tinfoil module')
+
+        orig_cwd = os.path.abspath(os.curdir)
+
+        # Load tinfoil
+        try:
+            builddir = os.environ.get('BUILDDIR')
+            if not builddir:
+                logger.warn('Bitbake environment not loaded?')
+                return tinfoil
+            os.chdir(builddir)
+            tinfoil = bb.tinfoil.Tinfoil()
+            tinfoil.prepare(config_only=config_only)
+        except bb.tinfoil.TinfoilUIException as te:
+            tinfoil.shutdown()
+            raise PatchtestOEError('Could not prepare properly tinfoil (TinfoilUIException)')
+        except:
+            tinfoil.shutdown()
+            raise
+        finally:
+            os.chdir(orig_cwd)
+
+        return tinfoil
+
+    @classmethod
+    def get_metadata_stats(cls, patchset):
+        """Get lists of added, modified and removed metadata files"""
+
+        def find_pn(data, path):
+            """Find the PN from data"""
+            for _path, _pn in data:
+                if path in _path:
+                    return _path
+            return None
+
+        if not cls.tinfoil:
+            cls.tinfoil = cls.setup_tinfoil()
+
+        added_paths, modified_paths, removed_paths = [], [], []
+        added, modified, removed = [], [], []
+
+        # get metadata filename additions, modification and removals
+        for patch in patchset:
+            if patch.path.endswith('.bb') or patch.path.endswith('.bbappend') or patch.path.endswith('.inc'):
+                if patch.is_added_file:
+                    added_paths.append(os.path.join(os.path.abspath(pti.repodir), patch.path))
+                elif patch.is_modified_file:
+                    modified_paths.append(os.path.join(os.path.abspath(pti.repodir), patch.path))
+                elif patch.is_removed_file:
+                    removed_paths.append(os.path.join(os.path.abspath(pti.repodir), patch.path))
+
+        data = cls.tinfoil.cooker.recipecaches[''].pkg_fn.items()
+
+        added = [find_pn(data,path) for path in added_paths]
+        modified = [find_pn(data,path) for path in modified_paths]
+        removed = [find_pn(data,path) for path in removed_paths]
+
+        return [a for a in added if a], [m for m in modified if m], [r for r in removed if r]

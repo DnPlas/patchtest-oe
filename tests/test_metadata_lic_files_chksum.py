@@ -35,63 +35,41 @@ class LicFilesChkSum(base.Metadata):
         if not self.added:
             self.skip('No added recipes, skipping test')
 
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared')
-
-        try:
-            for pn in self.added:
-                # we are not interested in images
-                if 'core-image' in pn:
-                    continue
-                rd = self.tinfoil.parse_recipe(pn)
-                lic_files_chksum = rd.getVar(self.metadata)
-                if rd.getVar(self.license) == self.closed:
-                    continue
-                if not lic_files_chksum:
-                    self.fail('%s is missing in newly added recipe' % self.metadata,
-                              'Specify the variable %s in %s' % (self.metadata, pn))
-        finally:
-            self.tinfoil.shutdown()
+        for pn in self.added:
+            # we are not interested in images
+            if 'core-image' in pn:
+                continue
+            rd = self.tinfoil.parse_recipe(pn)
+            lic_files_chksum = rd.getVar(self.metadata)
+            if rd.getVar(self.license) == self.closed:
+                continue
+            if not lic_files_chksum:
+                self.fail('%s is missing in newly added recipe' % self.metadata,
+                          'Specify the variable %s in %s' % (self.metadata, pn))
 
     def pretest_lic_files_chksum_modified_not_mentioned(self):
         if not self.modified:
             self.skip('No modified recipes, skipping pretest')
 
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared')
-
-        try:
-            # get the proper metadata values
-            for pn in self.modified:
-                # we are not interested in images
-                if 'core-image' in pn:
-                    continue
-                rd = self.tinfoil.parse_recipe(pn)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
-        finally:
-            self.tinfoil.shutdown()
+        # get the proper metadata values
+        for pn in self.modified:
+            # we are not interested in images
+            if 'core-image' in pn:
+                continue
+            rd = self.tinfoil.parse_recipe(pn)
+            patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
 
     def test_lic_files_chksum_modified_not_mentioned(self):
         if not self.modified:
             self.skip('No modified recipes, skipping test')
 
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared')
-
-        try:
-            # get the proper metadata values
-            for pn in self.modified:
-                # we are not interested in images
-                if 'core-image' in pn:
-                    continue
-                rd = self.tinfoil.parse_recipe(pn)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
-        finally:
-            self.tinfoil.shutdown()
-
+        # get the proper metadata values
+        for pn in self.modified:
+            # we are not interested in images
+            if 'core-image' in pn:
+                continue
+            rd = self.tinfoil.parse_recipe(pn)
+            patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(),self.metadata,pn)] = rd.getVar(self.metadata)
         # compare if there were changes between pre-merge and merge
         for pn in self.modified:
             pretest = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(),self.metadata, pn)]

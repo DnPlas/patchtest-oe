@@ -38,39 +38,25 @@ class SrcUri(base.Metadata):
         if not self.modified:
             self.skip('No modified recipes, skipping pretest')
 
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared')
-
-        try:
-            # get the proper metadata values
-            for pn in self.modified:
-                # we are not interested in images
-                if 'core-image' in pn:
-                    continue
-                rd = self.tinfoil.parse_recipe(pn)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
-        finally:
-            self.tinfoil.shutdown()
+        # get the proper metadata values
+        for pn in self.modified:
+            # we are not interested in images
+            if 'core-image' in pn:
+                continue
+            rd = self.tinfoil.parse_recipe_file(pn)
+            patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
 
     def test_src_uri_left_files(self):
         if not self.modified:
             self.skip('No modified recipes, skipping pretest')
 
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared')
-
-        try:
-            # get the proper metadata values
-            for pn in self.modified:
-                # we are not interested in images
-                if 'core-image' in pn:
-                    continue
-                rd = self.tinfoil.parse_recipe(pn)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
-        finally:
-            self.tinfoil.shutdown()
+        # get the proper metadata values
+        for pn in self.modified:
+            # we are not interested in images
+            if 'core-image' in pn:
+                continue
+            rd = self.tinfoil.parse_recipe(pn)
+            patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
 
         for pn in self.modified:
             pretest_src_uri = patchtestdata.PatchTestDataStore['pre%s-%s-%s' % (self.shortid(), self.metadata, pn)].split()
@@ -100,46 +86,33 @@ class SrcUri(base.Metadata):
                               data=[('Patch', f) for f in not_removed])
 
     def pretest_src_uri_checksums_not_changed(self):
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared')
-
-        try:
-            # get the proper metadata values
-            for pn in self.modified:
-                patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)] = dict()
-                rd = self.tinfoil.parse_recipe(pn)
-                src_uri = rd.getVar(self.metadata)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = src_uri
-                for uri in src_uri.split():
-                     if not 'file:' in uri:
-                         if self.git_regex.match(uri):
-                             self.skip('No need to test SRC_URI checksums on a git source')
-                for s in [self.md5sum, self.sha256sum]:
-                    for flag in rd.getVarFlags(self.metadata):
-                        if s in flag:
-                            patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)][flag] = rd.getVarFlag(self.metadata, flag)
-        finally:
-            self.tinfoil.shutdown()
+        # get the proper metadata values
+        for pn in self.modified:
+            patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)] = dict()
+            rd = self.tinfoil.parse_recipe(pn)
+            src_uri = rd.getVar(self.metadata)
+            patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = src_uri
+            for uri in src_uri.split():
+                 if not 'file:' in uri:
+                     if self.git_regex.match(uri):
+                         self.skip('No need to test SRC_URI checksums on a git source')
+            for s in [self.md5sum, self.sha256sum]:
+                for flag in rd.getVarFlags(self.metadata):
+                    if s in flag:
+                        patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)][flag] = rd.getVarFlag(self.metadata, flag)
 
     def test_src_uri_checksums_not_changed(self):
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('tinfoil could not be prepared')
+        # get the proper metadata values
+        for pn in self.modified:
+            patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)] = dict()
+            rd = self.tinfoil.parse_recipe(pn)
+            src_uri = rd.getVar(self.metadata)
+            patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = src_uri
+            for s in [self.md5sum, self.sha256sum]:
+                for flag in rd.getVarFlags(self.metadata):
+                    if s in flag:
+                        patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)][flag] = rd.getVarFlag(self.metadata, flag)
 
-        try:
-            # get the proper metadata values
-            for pn in self.modified:
-                patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)] = dict()
-                rd = self.tinfoil.parse_recipe(pn)
-                src_uri = rd.getVar(self.metadata)
-                patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = src_uri
-                for s in [self.md5sum, self.sha256sum]:
-                    for flag in rd.getVarFlags(self.metadata):
-                        if s in flag:
-                            patchtestdata.PatchTestDataStore['%s-%s-sums' % (self.shortid(), pn)][flag] = rd.getVarFlag(self.metadata, flag)
-        finally:
-            self.tinfoil.shutdown()
 
         # loop on every src_uri and check if checksums change
         for pn in self.modified:

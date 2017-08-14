@@ -30,21 +30,14 @@ class Summary(base.Metadata):
         if not self.added:
             self.skip('No added recipes, skipping test')
 
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared')
+        for pn in self.added:
+            # we are not interested in images
+            if 'core-image' in pn:
+                continue
+            rd = self.tinfoil.parse_recipe(pn)
+            summary = rd.getVar(self.metadata)
 
-        try:
-            for pn in self.added:
-                # we are not interested in images
-                if 'core-image' in pn:
-                    continue
-                rd = self.tinfoil.parse_recipe(pn)
-                summary = rd.getVar(self.metadata)
-
-                # "${PN} version ${PN}-${PR}" is the default, so fail if default
-                if summary.startswith('%s version' % pn):
-                    self.fail('%s is missing in newly added recipe' % self.metadata,
-                              'Specify the variable %s in %s' % (self.metadata, pn))
-        finally:
-            self.tinfoil.shutdown()
+            # "${PN} version ${PN}-${PR}" is the default, so fail if default
+            if summary.startswith('%s version' % pn):
+                self.fail('%s is missing in newly added recipe' % self.metadata,
+                          'Specify the variable %s in %s' % (self.metadata, pn))

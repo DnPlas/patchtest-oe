@@ -43,30 +43,23 @@ class License(base.Metadata):
             for pn in self.added:
                 fd.write('LICENSE ??= "%s"\n' % self.invalid_license)
 
-        self.tinfoil = base.setup_tinfoil()
-        if not self.tinfoil:
-            self.skip('Tinfoil could not be prepared, possible wrong oe-core repository path')
+        no_license = False
+        for pn in self.added:
+            rd = self.tinfoil.parse_recipe(pn)
+            license = rd.getVar(self.metadata)
+            if license == self.invalid_license:
+                no_license = True
+                break
 
-        try:
-            no_license = False
-            for pn in self.added:
-                rd = self.tinfoil.parse_recipe(pn)
-                license = rd.getVar(self.metadata)
-                if license == self.invalid_license:
-                    no_license = True
-                    break
-
-            # remove auto.conf line or the file itself
-            if open_flag == 'w':
-                os.remove(auto_conf)
-            else:
-                fd = open(auto_conf, 'r')
-                lines = fd.readlines()
-                fd.close()
-                with open(auto_conf, 'w') as fd:
-                    fd.write(''.join(lines[:-1]))
-        finally:
-            self.tinfoil.shutdown()
+        # remove auto.conf line or the file itself
+        if open_flag == 'w':
+            os.remove(auto_conf)
+        else:
+            fd = open(auto_conf, 'r')
+            lines = fd.readlines()
+            fd.close()
+            with open(auto_conf, 'w') as fd:
+                fd.write(''.join(lines[:-1]))
 
         if no_license:
             self.fail('Recipe does not have the LICENSE field set', 'Include a LICENSE into the new recipe')
