@@ -151,7 +151,7 @@ class Metadata(Base):
         cls.tinfoil.shutdown()
 
     @classmethod
-    def setup_tinfoil(cls, config_only=True):
+    def setup_tinfoil(cls, config_only=False):
         """Initialize tinfoil api from bitbake"""
 
         # import relevant libraries
@@ -168,6 +168,7 @@ class Metadata(Base):
         orig_cwd = os.path.abspath(os.curdir)
 
         # Load tinfoil
+        tinfoil = None
         try:
             builddir = os.environ.get('BUILDDIR')
             if not builddir:
@@ -177,11 +178,13 @@ class Metadata(Base):
             tinfoil = bb.tinfoil.Tinfoil()
             tinfoil.prepare(config_only=config_only)
         except bb.tinfoil.TinfoilUIException as te:
-            tinfoil.shutdown()
+            if tinfoil:
+                tinfoil.shutdown()
             raise PatchtestOEError('Could not prepare properly tinfoil (TinfoilUIException)')
-        except:
-            tinfoil.shutdown()
-            raise
+        except Exception as e:
+            if tinfoil:
+                tinfoil.shutdown()
+            raise e
         finally:
             os.chdir(orig_cwd)
 
