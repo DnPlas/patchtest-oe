@@ -23,8 +23,7 @@ import os
 
 class PatchUpstreamStatus(base.Base):
 
-    upstream_status_literal_mark  = str(parse_upstream_status.upstream_status_mark).strip('"')
-    upstream_status_regex = re.compile("(?<=\+)%s" % upstream_status_literal_mark)
+    upstream_status_regex = re.compile("(?<=\+)Upstream.Status", re.IGNORECASE)
 
     @classmethod
     def setUpClassLocal(cls):
@@ -37,28 +36,19 @@ class PatchUpstreamStatus(base.Base):
     def setUp(self):
         if self.unidiff_parse_error:
             self.skip('Python-unidiff parse error')
-        self.valid_status = parse_upstream_status.upstream_status_literal_valid_status
+        self.valid_status    = ', '.join(parse_upstream_status.upstream_status_literal_valid_status)
+        self.standard_format = 'Upstream-Status: <Valid status>'
 
-    def test_upstream_status_presence(self):
+    def test_upstream_status_presence_format(self):
         if not PatchUpstreamStatus.newpatches:
-            self.skip("There are no new software patches, no reason to test %s presence" % self.upstream_status_literal_mark)
+            self.skip("There are no new software patches, no reason to test Upstream-Status presence/format")
 
-        for newpatch in PatchUpstreamStatus.newpatches:
-            payload = newpatch.__str__()
-            for line in payload.splitlines():
-                if self.patchmetadata_regex.match(line):
-                    continue
-                if self.upstream_status_regex.search(payload):
-                    break
-            else:
-                self.fail('Added patch file is missing Upstream-Status in the header',
-                          'Add Upstream-Status: <status> to the header of %s (possible values: %s)' % (newpatch.path, ', '.join(self.valid_status)))
-
-    def test_upstream_status_format(self):
         for newpatch in PatchUpstreamStatus.newpatches:
             payload = newpatch.__str__()
             if not self.upstream_status_regex.search(payload):
-                continue
+                self.fail('Added patch file is missing Upstream-Status in the header',
+                          'Add Upstream-Status: <Valid status> to the header of %s' % newpatch.path,
+                          data=[('Standard format', self.standard_format), ('Valid status', self.valid_status)])
             for line in payload.splitlines():
                 if self.patchmetadata_regex.match(line):
                     continue
@@ -68,4 +58,4 @@ class PatchUpstreamStatus(base.Base):
                     except pyparsing.ParseException as pe:
                         self.fail('Upstream-Status is in incorrect format',
                                   'Fix Upstream-Status format in %s' % os.path.basename(newpatch.path),
-                                  data=[('Current', pe.pstr), ('Valid Status', ', '.join(self.valid_status))])
+                                  data=[('Current', pe.pstr), ('Standard format', self.standard_format), ('Valid status', self.valid_status)])
