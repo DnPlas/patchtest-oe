@@ -198,7 +198,7 @@ class Metadata(Base):
             """Find the PN from data"""
             for _path, _pn in data:
                 if path in _path:
-                    return _path
+                    return _pn
             return None
 
         if not cls.tinfoil:
