@@ -51,12 +51,12 @@ class MailingList(base.Base):
         # a meta project may be indicted in the message subject, if this is the case, just fail
         # TODO: there may be other project with no-meta prefix, we also need to detect these
         project_regex = re.compile("\[(?P<project>meta-.+)\]")
-        for msg in self.mbox:
-            match = project_regex.match(msg['subject'])
+        for commit in MailingList.commits:
+            match = project_regex.match(commit.subject)
             if match:
                 self.fail('Series sent to the wrong mailing list',
                           'Check the project\'s README (%s) and send the patch to the indicated list' % match.group('project'),
-                          commit={'subject': msg['subject'], 'shortlog': msg['subject']})
+                          commit)
 
         for patch in self.patchset:
             folders = patch.path.split('/')
@@ -73,6 +73,3 @@ class MailingList(base.Base):
                     if patch.path.startswith(poky_file):
                         self.fail('Series sent to the wrong mailing list or some patches from the series correspond to different mailing lists', 'Send the series again to the correct mailing list (ML)',
                                   data=[('Suggested ML', '%s [%s]' % (self.poky.listemail, self.poky.gitrepo)),('Patch\'s path:', patch.path)])
-
-
-
