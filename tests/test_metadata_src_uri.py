@@ -43,7 +43,7 @@ class SrcUri(base.Metadata):
             # we are not interested in images
             if 'core-image' in pn:
                 continue
-            rd = self.tinfoil.parse_recipe_file(pn)
+            rd = self.tinfoil.parse_recipe(pn)
             patchtestdata.PatchTestDataStore['%s-%s-%s' % (self.shortid(), self.metadata, pn)] = rd.getVar(self.metadata)
 
     def test_src_uri_left_files(self):
