@@ -39,7 +39,7 @@ Commit = collections.namedtuple('Commit', ['author', 'subject', 'commit_message'
 class PatchtestOEError(Exception):
     """Exception for handling patchtest-oe errors"""
     def __init__(self, message, exitcode=1):
-        super(DevtoolError, self).__init__(message)
+        super().__init__(message)
         self.exitcode = exitcode
 
 class Base(unittest.TestCase):
