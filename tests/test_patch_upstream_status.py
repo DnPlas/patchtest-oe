@@ -36,7 +36,7 @@ class PatchUpstreamStatus(base.Base):
     def setUp(self):
         if self.unidiff_parse_error:
             self.skip('Python-unidiff parse error')
-        self.valid_status    = ', '.join(parse_upstream_status.upstream_status_literal_valid_status)
+        self.valid_status    = ', '.join(parse_upstream_status.upstream_status_nonliteral_valid_status)
         self.standard_format = 'Upstream-Status: <Valid status>'
 
     def test_upstream_status_presence_format(self):
@@ -53,9 +53,24 @@ class PatchUpstreamStatus(base.Base):
                 if self.patchmetadata_regex.match(line):
                     continue
                 if self.upstream_status_regex.search(line):
-                    try:
-                        parse_upstream_status.upstream_status.parseString(line.lstrip('+'))
-                    except pyparsing.ParseException as pe:
-                        self.fail('Upstream-Status is in incorrect format',
-                                  'Fix Upstream-Status format in %s' % os.path.basename(newpatch.path),
-                                  data=[('Current', pe.pstr), ('Standard format', self.standard_format), ('Valid status', self.valid_status)])
+                        if parse_upstream_status.inappropriate_status_mark.searchString(line):
+                            try:
+                                parse_upstream_status.upstream_status_inappropriate_info.parseString(line.lstrip('+'))
+                            except pyparsing.ParseException as pe:
+                                self.fail('Upstream-Status is Inappropriate, but no reason was provided',
+                                          'Include a brief reason why %s is inappropriate' % os.path.basename(newpatch.path),
+                                          data=[('Current', pe.pstr), ('Standard format', 'Upstream-Status: Inappropriate [reason]')])
+                        elif parse_upstream_status.submitted_status_mark.searchString(line):
+                            try:
+                                parse_upstream_status.upstream_status_submitted_info.parseString(line.lstrip('+'))
+                            except pyparsing.ParseException as pe:
+                                self.fail('Upstream-Status is Submitted, but it is not mentioned where',
+                                          'Include where %s was submitted' % os.path.basename(newpatch.path),
+                                          data=[('Current', pe.pstr), ('Standard format', 'Upstream-Status: Submitted [where]')])
+                        else:
+                            try:
+                                parse_upstream_status.upstream_status.parseString(line.lstrip('+'))
+                            except pyparsing.ParseException as pe:
+                                self.fail('Upstream-Status is in incorrect format',
+                                          'Fix Upstream-Status format in %s' % os.path.basename(newpatch.path),
+                                          data=[('Current', pe.pstr), ('Standard format', self.standard_format), ('Valid status', self.valid_status)])
